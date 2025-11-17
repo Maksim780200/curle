@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Міні-Гра: Квадрати</title>
+    <title>Міні-гра: Змійка</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,115 +11,124 @@
         }
 
         #gameArea {
-            width: 600px;
-            height: 400px;
-            border: 2px solid black;
+            width: 500px;
+            height: 500px;
+            border: 3px solid black;
             margin: 20px auto;
+            background: #e8e8e8;
             position: relative;
-            background: #f0f0f0;
+            overflow: hidden;
         }
 
-        .square {
-            position: absolute;
-            border-radius: 5px;
-        }
-
-        #player {
-            width: 80px;
-            height: 80px;
+        .segment {
+            width: 20px;
+            height: 20px;
             background: dodgerblue;
-            left: 50px;
-            top: 150px;
-            transition: 0.3s;
+            position: absolute;
         }
 
         #food {
-            width: 40px;
-            height: 40px;
+            width: 20px;
+            height: 20px;
             background: orange;
-            right: 50px;
-            top: 150px;
+            position: absolute;
         }
 
         button {
             padding: 10px 20px;
             margin: 10px;
-            font-size: 17px;
-            cursor: pointer;
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
 
-<h1>Міні-гра: Їдящий квадрат</h1>
+<h1>Міні-гра: Змійка</h1>
 
 <div id="gameArea">
-    <div id="player" class="square"></div>
-    <div id="food" class="square"></div>
+    <div id="food"></div>
 </div>
 
-<button id="moveBtn">Рух до їжі</button>
-<button id="splitBtn">Відділити квадрат</button>
+<button onclick="changeDirection('up')">Вгору</button>
+<button onclick="changeDirection('left')">Вліво</button>
+<button onclick="changeDirection('right')">Вправо</button>
+<button onclick="changeDirection('down')">Вниз</button>
+<br>
+<button onclick="splitTail()">Відділити квадратик</button>
 
 <script>
-    const player = document.getElementById("player");
-    const food = document.getElementById("food");
-    const area = document.getElementById("gameArea");
+const area = document.getElementById("gameArea");
+const food = document.getElementById("food");
 
-    let playerSize = 80;
-    let foodExists = true;
+// Положення їжі
+function placeFood() {
+    food.style.left = Math.floor(Math.random() * 25) * 20 + "px";
+    food.style.top = Math.floor(Math.random() * 25) * 20 + "px";
+}
+placeFood();
 
-    function getCoords(elem) {
-        return elem.getBoundingClientRect();
+// Масив сегментів змійки
+let snake = [
+    {x: 200, y: 200}, // голова
+];
+
+let direction = "right";
+
+// Створюємо HTML елемент для голови
+function drawSnake() {
+    area.innerHTML = "";
+    area.appendChild(food);
+
+    snake.forEach(seg => {
+        let div = document.createElement("div");
+        div.className = "segment";
+        div.style.left = seg.x + "px";
+        div.style.top = seg.y + "px";
+        area.appendChild(div);
+    });
+}
+
+drawSnake();
+
+// рух змійки
+function move() {
+    let head = {...snake[0]};
+
+    if (direction === "right") head.x += 20;
+    if (direction === "left") head.x -= 20;
+    if (direction === "up") head.y -= 20;
+    if (direction === "down") head.y += 20;
+
+    // додаємо нову голову
+    snake.unshift(head);
+
+    // Перевірка на з'їдання
+    if (head.x == parseInt(food.style.left) &&
+        head.y == parseInt(food.style.top)) {
+        
+        placeFood(); // нова їжа
+    } else {
+        snake.pop(); // рух: прибираємо хвіст
     }
 
-    // --- Рух до їжі ---
-    document.getElementById("moveBtn").addEventListener("click", () => {
-        if (!foodExists) return;
+    drawSnake();
+}
 
-        // Отримуємо координати
-        const playerRect = getCoords(player);
-        const foodRect = getCoords(food);
+// зміна напрямку
+function changeDirection(dir) {
+    direction = dir;
+}
 
-        // Рухаємо гравця
-        player.style.left = (food.offsetLeft - 20) + "px";
-        player.style.top = (food.offsetTop - 20) + "px";
+// відділити частину (зменшити змійку)
+function splitTail() {
+    if (snake.length > 1) {
+        snake.pop();  // відривається один сегмент
+        drawSnake();
+    }
+}
 
-        setTimeout(() => {
-            // Перевірка зіткнення
-            if (Math.abs(playerRect.left - foodRect.left) < 100 &&
-                Math.abs(playerRect.top - foodRect.top) < 100) {
-
-                // З'їдання
-                food.style.display = "none";
-                foodExists = false;
-
-                playerSize += 20;
-                player.style.width = playerSize + "px";
-                player.style.height = playerSize + "px";
-            }
-        }, 300);
-    });
-
-    // --- Відділення квадрата ---
-    document.getElementById("splitBtn").addEventListener("click", () => {
-        if (foodExists) return;
-
-        // Відновити їжу
-        food.style.display = "block";
-        foodExists = true;
-
-        // Нове положення маленького квадрата
-        food.style.left = (player.offsetLeft + playerSize + 10) + "px";
-        food.style.top = (player.offsetTop + 30) + "px";
-
-        // Гравець зменшується
-        if (playerSize > 40) {
-            playerSize -= 20;
-            player.style.width = playerSize + "px";
-            player.style.height = playerSize + "px";
-        }
-    });
+// запуск гри
+setInterval(move, 150);
 </script>
 
 </body>
