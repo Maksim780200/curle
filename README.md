@@ -2,133 +2,138 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Міні-гра: Змійка</title>
+    <title>Snake Game</title>
     <style>
         body {
+            background: #222;
+            color: white;
             font-family: Arial, sans-serif;
             text-align: center;
             margin-top: 20px;
         }
 
-        #gameArea {
-            width: 500px;
-            height: 500px;
-            border: 3px solid black;
-            margin: 20px auto;
-            background: #e8e8e8;
-            position: relative;
-            overflow: hidden;
+        canvas {
+            background: #111;
+            border: 3px solid #00ff66;
+            margin-top: 20px;
         }
 
-        .segment {
-            width: 20px;
-            height: 20px;
-            background: dodgerblue;
-            position: absolute;
-        }
-
-        #food {
-            width: 20px;
-            height: 20px;
-            background: orange;
-            position: absolute;
-        }
-
-        button {
-            padding: 10px 20px;
-            margin: 10px;
-            font-size: 16px;
+        h1 {
+            margin-bottom: 5px;
         }
     </style>
 </head>
 <body>
 
-<h1>Міні-гра: Змійка</h1>
+<h1>Змійка</h1>
+<p>Управління: стрілки ↑ ↓ ← →</p>
 
-<div id="gameArea">
-    <div id="food"></div>
-</div>
-
-<button onclick="changeDirection('up')">Вгору</button>
-<button onclick="changeDirection('left')">Вліво</button>
-<button onclick="changeDirection('right')">Вправо</button>
-<button onclick="changeDirection('down')">Вниз</button>
-<br>
-<button onclick="splitTail()">Відділити квадратик</button>
+<canvas id="game" width="400" height="400"></canvas>
 
 <script>
-const area = document.getElementById("gameArea");
-const food = document.getElementById("food");
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-// Положення їжі
-function placeFood() {
-    food.style.left = Math.floor(Math.random() * 25) * 20 + "px";
-    food.style.top = Math.floor(Math.random() * 25) * 20 + "px";
+// Розмір клітинки
+const box = 20;
+
+// Початкові координати змійки
+let snake = [];
+snake[0] = { x: 9 * box, y: 9 * box };
+
+// Створення їжі
+let food = {
+    x: Math.floor(Math.random() * 20) * box,
+    y: Math.floor(Math.random() * 20) * box
+};
+
+let direction;
+let score = 0;
+
+// Управління клавішами
+document.addEventListener("keydown", setDirection);
+
+function setDirection(event) {
+    if (event.key === "ArrowLeft" && direction !== "RIGHT") {
+        direction = "LEFT";
+    } else if (event.key === "ArrowUp" && direction !== "DOWN") {
+        direction = "UP";
+    } else if (event.key === "ArrowRight" && direction !== "LEFT") {
+        direction = "RIGHT";
+    } else if (event.key === "ArrowDown" && direction !== "UP") {
+        direction = "DOWN";
+    }
 }
-placeFood();
 
-// Масив сегментів змійки
-let snake = [
-    {x: 200, y: 200}, // голова
-];
+// Головна функція гри
+function drawGame() {
+    // Малюємо фон
+    ctx.fillStyle = "#222";
+    ctx.fillRect(0, 0, 400, 400);
 
-let direction = "right";
+    // Малюємо їжу
+    ctx.fillStyle = "red";
+    ctx.fillRect(food.x, food.y, box, box);
 
-// Створюємо HTML елемент для голови
-function drawSnake() {
-    area.innerHTML = "";
-    area.appendChild(food);
+    // Малюємо змійку
+    for (let i = 0; i < snake.length; i++) {
+        ctx.fillStyle = i === 0 ? "#00ff44" : "#00cc44";
+        ctx.fillRect(snake[i].x, snake[i].y, box, box);
+    }
 
-    snake.forEach(seg => {
-        let div = document.createElement("div");
-        div.className = "segment";
-        div.style.left = seg.x + "px";
-        div.style.top = seg.y + "px";
-        area.appendChild(div);
-    });
-}
+    // Координати голови
+    let snakeX = snake[0].x;
+    let snakeY = snake[0].y;
 
-drawSnake();
+    // Рух
+    if (direction === "LEFT") snakeX -= box;
+    if (direction === "RIGHT") snakeX += box;
+    if (direction === "UP") snakeY -= box;
+    if (direction === "DOWN") snakeY += box;
 
-// рух змійки
-function move() {
-    let head = {...snake[0]};
-
-    if (direction === "right") head.x += 20;
-    if (direction === "left") head.x -= 20;
-    if (direction === "up") head.y -= 20;
-    if (direction === "down") head.y += 20;
-
-    // додаємо нову голову
-    snake.unshift(head);
-
-    // Перевірка на з'їдання
-    if (head.x == parseInt(food.style.left) &&
-        head.y == parseInt(food.style.top)) {
-        
-        placeFood(); // нова їжа
+    // Якщо з'їв їжу
+    if (snakeX === food.x && snakeY === food.y) {
+        score++;
+        food = {
+            x: Math.floor(Math.random() * 20) * box,
+            y: Math.floor(Math.random() * 20) * box
+        };
     } else {
-        snake.pop(); // рух: прибираємо хвіст
+        snake.pop(); // видаляємо хвіст
     }
 
-    drawSnake();
-}
+    // Нова голова
+    let newHead = { x: snakeX, y: snakeY };
 
-// зміна напрямку
-function changeDirection(dir) {
-    direction = dir;
-}
-
-// відділити частину (зменшити змійку)
-function splitTail() {
-    if (snake.length > 1) {
-        snake.pop();  // відривається один сегмент
-        drawSnake();
+    // Перевірка удару в стіну або себе
+    if (
+        snakeX < 0 || snakeX >= 400 ||
+        snakeY < 0 || snakeY >= 400 ||
+        collision(newHead, snake)
+    ) {
+        alert("Гра закінчена! Твій результат: " + score);
+        document.location.reload();
     }
+
+    snake.unshift(newHead);
+
+    // Вивід очок
+    ctx.fillStyle = "white";
+    ctx.font = "20px Arial";
+    ctx.fillText("Очки: " + score, 10, 390);
 }
 
-// запуск гри
-setInterval(move, 150);
+// Перевірка на зіткнення хвоста з головою
+function collision(head, arr) {
+    for (let i = 0; i < arr.length; i++) {
+        if (head.x === arr[i].x && head.y === arr[i].y) {
+            return true;
+        }
+    }
+    return false;
+}
+
+let game = setInterval(drawGame, 120);
 </script>
 
 </body>
